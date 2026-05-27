@@ -1,7 +1,7 @@
 <Solution>
   <Folder Name="/Элементы решения/">
-    <File Path="../../../../090303-pi-kemsu-NumericalDuel/.editorconfig" />
-    <File Path="../../../../090303-pi-kemsu-NumericalDuel/Settings.StyleCop.json" />
+    <File Path="../../090303-pi-kemsu-NumericalDuel/.editorconfig" />
+    <File Path="../../090303-pi-kemsu-NumericalDuel/Settings.StyleCop.json" />
   </Folder>
   <Project Path="Warehouse management system.csproj" />
 </Solution>
