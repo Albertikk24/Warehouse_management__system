@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\stasi\\source\\repos\\boss\\Warehouse management system\\Warehouse management system.csproj",
+      "projectUniqueName": "C:\\Users\\stasi\\Warehouse_management__system\\Warehouse management system\\Warehouse management system.csproj",
       "projectName": "Warehouse management system",
-      "projectPath": "C:\\Users\\stasi\\source\\repos\\boss\\Warehouse management system\\Warehouse management system.csproj",
+      "projectPath": "C:\\Users\\stasi\\Warehouse_management__system\\Warehouse management system\\Warehouse management system.csproj",
       "packagesPath": "C:\\Users\\stasi\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\stasi\\source\\repos\\boss\\Warehouse management system\\obj\\",
+      "outputPath": "C:\\Users\\stasi\\Warehouse_management__system\\Warehouse management system\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\stasi\\AppData\\Roaming\\NuGet\\NuGet.Config",
