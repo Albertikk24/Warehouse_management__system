@@ -3,25 +3,21 @@ using WarehouseSystem.Observer;
 
 namespace WarehouseSystem.Observers;
 
-// Конкретный наблюдатель: Менеджер
-public class Manager : IWarehouseObserver
-{
+// Конкретный наблюдатель: Менеджер (получает email-уведомления)
+public class Manager : IWarehouseObserver {
+  // ========== ПОЛЯ ==========
   private string _employeeName;
   private string _emailAddress;
 
-  public Manager(string employeeName, string emailAddress)
-  {
-    _employeeName = employeeName;
-    _emailAddress = emailAddress;
+  // ========== КОНСТРУКТОР ==========
+  public Manager(string employeeName, string emailAddress) {
+    _employeeName = employeeName ?? throw new ArgumentNullException(nameof(employeeName));
+    _emailAddress = emailAddress ?? throw new ArgumentNullException(nameof(emailAddress));
   }
 
-  public void Update(
-    string message,
-    string productSku,
-    string productName,
-    int currentQuantity,
-    int thresholdValue)
-  {
+  // ========== ПОЛУЧЕНИЕ УВЕДОМЛЕНИЯ ==========
+  public void Update(string message, string productSku, string productName, int currentQuantity, int thresholdValue) {
+    // Формирование одного вывода в виде таблицы
     string notification = $@"
 +---------------------------------------------------+
 | EMAIL УВЕДОМЛЕНИЕ - МЕНЕДЖЕР                      |
@@ -35,18 +31,16 @@ public class Manager : IWarehouseObserver
 |
 | {(currentQuantity <= thresholdValue ? "ТРЕБУЕТСЯ ВМЕШАТЕЛЬСТВО!" : "Ситуация в норме")}
 +---------------------------------------------------+";
-
     Console.WriteLine(notification);
     Logger.Instance.LogMessage($"Уведомление отправлено менеджеру {_employeeName}: {productName} - {currentQuantity} шт.");
   }
 
-  public string GetObserverName()
-  {
+  // ========== ПОЛУЧЕНИЕ ДАННЫХ ==========
+  public string GetObserverName() {
     return _employeeName;
   }
 
-  public string GetObserverRole()
-  {
+  public string GetObserverRole() {
     return "Менеджер";
   }
 }

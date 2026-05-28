@@ -1,83 +1,80 @@
 ﻿namespace WarehouseSystem.Infrastructure;
 
 // Паттерн Одиночка (Singleton): потокобезопасный логгер
-public sealed class Logger
-{
+public sealed class Logger {
+  // ========== ОДИНОЧКА (SINGLETON) ==========
   private static readonly Lazy<Logger> _singletonInstance = new Lazy<Logger>(() => new Logger());
-
+  
+  // ========== ПОЛЯ ==========
   private List<string> _logEntries;
   private readonly object _threadLock = new object();
-
+  
+  // ========== КОНСТАНТЫ ==========
   private const int MAXIMUM_LOG_ENTRIES = 1000;
 
-  private Logger()
-  {
+  // ========== ПРИВАТНЫЙ КОНСТРУКТОР ==========
+  private Logger() {
     _logEntries = new List<string>();
     LogMessage("Логгер инициализирован");
   }
 
-  public static Logger Instance
-  {
+  // ========== СВОЙСТВО ДЛЯ ДОСТУПА К ЭКЗЕМПЛЯРУ ==========
+  public static Logger Instance {
     get { return _singletonInstance.Value; }
   }
 
-  public void LogMessage(string logText)
-  {
+  // ========== ДОБАВЛЕНИЕ ЗАПИСИ В ЛОГ ==========
+  public void LogMessage(string logText) {
     string timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
     string formattedLogEntry = $"[{timestamp}] {logText}";
-
-    lock (_threadLock)
-    {
+    
+    lock (_threadLock) {
       _logEntries.Add(formattedLogEntry);
-
-      if (_logEntries.Count > MAXIMUM_LOG_ENTRIES)
-      {
+      
+      // Ограничение размера лога (кольцевой буфер)
+      if (_logEntries.Count > MAXIMUM_LOG_ENTRIES) {
         _logEntries.RemoveAt(0);
       }
-
+      
+      // Вывод в консоль серым цветом
       Console.ForegroundColor = ConsoleColor.DarkGray;
       Console.WriteLine(formattedLogEntry);
       Console.ResetColor();
     }
   }
 
-  public void DisplayAllLogs()
-  {
-    Console.WriteLine("\n" + new string('=', 60));
-    Console.WriteLine("ИСТОРИЯ ЛОГОВ");
-    Console.WriteLine(new string('=', 60));
-
-    if (_logEntries.Count == 0)
-    {
-      Console.WriteLine("Логи отсутствуют");
-      Console.WriteLine(new string('=', 60));
-      Console.WriteLine();
-      return;
+  // ========== ВЫВОД ВСЕХ ЛОГОВ НА ЭКРАН ==========
+  public void DisplayAllLogs() {
+    // Формирование одного вывода
+    string output = "\n" + new string('=', 60) + "\n";
+    output += "ИСТОРИЯ ЛОГОВ\n";
+    output += new string('=', 60) + "\n";
+    
+    if (_logEntries.Count == 0) {
+      output += "Логи отсутствуют\n";
+    } else {
+      for (int logIndex = 0; logIndex < _logEntries.Count; logIndex++) {
+        output += _logEntries[logIndex] + "\n";
+      }
     }
-
-    for (int logIndex = 0; logIndex < _logEntries.Count; logIndex++)
-    {
-      Console.WriteLine(_logEntries[logIndex]);
-    }
-
-    Console.WriteLine(new string('=', 60));
-    Console.WriteLine($"Всего записей: {_logEntries.Count}");
-    Console.WriteLine();
+    
+    output += new string('=', 60) + "\n";
+    output += $"Всего записей: {_logEntries.Count}\n";
+    
+    Console.WriteLine(output);
   }
 
-  public void ClearAllLogs()
-  {
-    lock (_threadLock)
-    {
+  // ========== ОЧИСТКА ЛОГОВ ==========
+  public void ClearAllLogs() {
+    lock (_threadLock) {
       _logEntries.Clear();
       LogMessage("Логи очищены");
     }
   }
 
-  public List<string> GetCopyOfLogs()
-  {
-    lock (_threadLock)
-    {
+  // ========== ПОЛУЧЕНИЕ КОПИИ ЛОГОВ ==========
+  public List<string> GetCopyOfLogs() {
+    lock (_threadLock) {
       return new List<string>(_logEntries);
     }
   }

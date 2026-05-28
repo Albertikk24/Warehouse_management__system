@@ -4,35 +4,63 @@ using WarehouseSystem.Infrastructure;
 
 namespace WarehouseSystem.Services;
 
-// Сервис поставок
-public static class SupplyService
-{
-  public static void AddStockToWarehouse(Warehouse warehouse, string productSku, int addedQuantity)
-  {
-    Product targetProduct = warehouse.GetProductBySku(productSku);
-
-    if (targetProduct == null)
-    {
-      Logger.Instance.LogMessage($"Ошибка: товар {productSku} не найден. Невозможно добавить поставку.");
+// Сервис для работы с поставками
+public static class SupplyService {
+  // ========== ДОБАВЛЕНИЕ ПОСТАВКИ НА СКЛАД ==========
+  public static void AddStockToWarehouse(Warehouse warehouse, string productSku, int addedQuantity) {
+    if (warehouse == null) {
+      Logger.Instance.LogMessage("Ошибка: склад не может быть null");
       return;
     }
-
-    int newTotalQuantity = targetProduct.CurrentQuantity + addedQuantity;
-    warehouse.UpdateProductStock(productSku, newTotalQuantity, $"Поставка +{addedQuantity} шт.");
-
-    Logger.Instance.LogMessage($"Поставка товара {targetProduct.ProductName} ({productSku}): +{addedQuantity} шт. Итого: {newTotalQuantity} шт.");
+    
+    if (string.IsNullOrEmpty(productSku)) {
+      Logger.Instance.LogMessage("Ошибка: артикул товара не может быть пустым");
+      return;
+    }
+    
+    var stockService = warehouse.GetStockService();
+    Product? targetProduct = warehouse.GetProductBySku(productSku);
+    
+    // Проверка существования товара
+    if (targetProduct == null) {
+      Logger.Instance.LogMessage($"Ошибка: товар {productSku} не найден");
+      return;
+    }
+    
+    int oldQuantity = targetProduct.CurrentQuantity;
+    
+    // Добавление остатка
+    bool success = stockService.AddStock(productSku, addedQuantity);
+    
+    if (success) {
+      Logger.Instance.LogMessage($"Поставка товара {targetProduct.ProductName}: +{addedQuantity} шт. Итого: {targetProduct.CurrentQuantity} шт.");
+      // Проверка восстановления после поставки
+      warehouse.CheckRecoveryAndNotify(productSku, oldQuantity);
+    }
   }
 
-  public static void AddNewProductViaSupply(Warehouse warehouse, Product newProduct, int initialQuantity)
-  {
-    Product existingProduct = warehouse.GetProductBySku(newProduct.ProductSku);
-
-    if (existingProduct == null)
-    {
+  // ========== ДОБАВЛЕНИЕ НОВОГО ТОВАРА ЧЕРЕЗ ПОСТАВКУ ==========
+  public static void AddNewProductViaSupply(Warehouse warehouse, Product newProduct, int initialQuantity) {
+    if (warehouse == null) {
+      Logger.Instance.LogMessage("Ошибка: склад не может быть null");
+      return;
+    }
+    
+    if (newProduct == null) {
+      Logger.Instance.LogMessage("Ошибка: товар не может быть null");
+      return;
+    }
+    
+    Product? existingProduct = warehouse.GetProductBySku(newProduct.ProductSku);
+    
+    // Если товар новый - сначала добавляем в репозиторий
+    if (existingProduct == null) {
       warehouse.AddNewProduct(newProduct);
       Logger.Instance.LogMessage($"Новый товар добавлен через поставку: {newProduct.ProductName}");
+      AddStockToWarehouse(warehouse, newProduct.ProductSku, initialQuantity - newProduct.CurrentQuantity);
+    } else {
+      // Если товар уже есть - просто добавляем остаток
+      AddStockToWarehouse(warehouse, newProduct.ProductSku, initialQuantity);
     }
-
-    AddStockToWarehouse(warehouse, newProduct.ProductSku, initialQuantity);
   }
 }

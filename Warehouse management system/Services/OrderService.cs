@@ -4,99 +4,115 @@ using WarehouseSystem.Infrastructure;
 
 namespace WarehouseSystem.Services;
 
-// Сервис обработки заказов
-public static class OrderService
-{
-  private const int ZERO_QUANTITY = 0;
+// Сервис для обработки заказов
+public static class OrderService {
+  // ========== ХРАНЕНИЕ ИСТОРИИ ЗАКАЗОВ ==========
+  private static List<Order> _orderHistory = new List<Order>();
 
-  public static bool ProcessOrder(Warehouse warehouse, Order clientOrder)
-  {
-    Logger.Instance.LogMessage($"Создан заказ {clientOrder.OrderNumber}");
-
-    bool hasAllItemsInStock = CheckStockAvailability(warehouse, clientOrder);
-
-    if (!hasAllItemsInStock)
-    {
-      Logger.Instance.LogMessage($"Ошибка заказа {clientOrder.OrderNumber}: недостаточно товаров");
-      clientOrder.MarkAsRejected();
+  // ========== ОСНОВНОЙ МЕТОД ОБРАБОТКИ ЗАКАЗА ==========
+  public static bool ProcessOrder(Warehouse warehouse, Order clientOrder) {
+    if (warehouse == null || clientOrder == null) {
+      Logger.Instance.LogMessage("Ошибка: заказ или склад не могут быть null");
       return false;
     }
 
+    Logger.Instance.LogMessage($"Создан заказ {clientOrder.OrderNumber}");
+    
+    // Шаг 1: проверка наличия всех товаров
+    bool hasAllItemsInStock = CheckStockAvailability(warehouse, clientOrder);
+    
+    if (!hasAllItemsInStock) {
+      Logger.Instance.LogMessage($"Ошибка заказа {clientOrder.OrderNumber}: недостаточно товаров");
+      clientOrder.MarkAsRejected();
+      _orderHistory.Add(clientOrder);
+      return false;
+    }
+    
+    // Шаг 2: списание товаров
     DeductOrderItems(warehouse, clientOrder);
-
+    
+    // Шаг 3: завершение заказа
     clientOrder.MarkAsCompleted();
     Logger.Instance.LogMessage($"Заказ {clientOrder.OrderNumber} выполнен успешно");
-
+    _orderHistory.Add(clientOrder);
+    
     return true;
   }
 
-  // Проверка наличия всех товаров на складе
-  private static bool CheckStockAvailability(Warehouse warehouse, Order clientOrder)
-  {
-    Dictionary<string, int>.KeyCollection orderItemKeys = clientOrder.OrderItems.Keys;
-    List<string> productSkuList = new List<string>(orderItemKeys);
-
-    for (int itemIndex = 0; itemIndex < productSkuList.Count; itemIndex++)
-    {
-      string currentSku = productSkuList[itemIndex];
-      int requestedQuantity = clientOrder.OrderItems[currentSku];
-
-      if (!warehouse.HasEnoughStock(currentSku, requestedQuantity))
-      {
-        Product targetProduct = warehouse.GetProductBySku(currentSku);
-        string errorDetails = targetProduct == null
-          ? $"Товар {currentSku} не найден"
+  // ========== ПРОВЕРКА НАЛИЧИЯ ВСЕХ ТОВАРОВ ==========
+  private static bool CheckStockAvailability(Warehouse warehouse, Order clientOrder) {
+    if (warehouse == null || clientOrder == null) return false;
+    
+    var stockService = warehouse.GetStockService();
+    
+    foreach (var item in clientOrder.OrderItems) {
+      string currentSku = item.Key;
+      int requestedQuantity = item.Value;
+      
+      if (!stockService.HasEnoughStock(currentSku, requestedQuantity)) {
+        Product? targetProduct = warehouse.GetProductBySku(currentSku);
+        string errorDetails = targetProduct == null 
+          ? $"Товар {currentSku} не найден" 
           : $"Товар {targetProduct.ProductName}. Доступно: {targetProduct.CurrentQuantity}, запрошено: {requestedQuantity}";
-
+        
         Logger.Instance.LogMessage($"Недостаточно товара: {errorDetails}");
         return false;
       }
     }
-
     return true;
   }
 
-  // Списание товаров со склада
-  private static void DeductOrderItems(Warehouse warehouse, Order clientOrder)
-  {
-    List<string> productSkuList = new List<string>(clientOrder.OrderItems.Keys);
-
-    for (int itemIndex = 0; itemIndex < productSkuList.Count; itemIndex++)
-    {
-      string currentSku = productSkuList[itemIndex];
-      int requestedQuantity = clientOrder.OrderItems[currentSku];
-
-      Product targetProduct = warehouse.GetProductBySku(currentSku);
-
-      if (targetProduct != null)
-      {
-        int newStockQuantity = targetProduct.CurrentQuantity - requestedQuantity;
-        warehouse.UpdateProductStock(currentSku, newStockQuantity, $"Заказ {clientOrder.OrderNumber}");
-      }
+  // ========== СПИСАНИЕ ТОВАРОВ СО СКЛАДА ==========
+  private static void DeductOrderItems(Warehouse warehouse, Order clientOrder) {
+    if (warehouse == null || clientOrder == null) return;
+    
+    var stockService = warehouse.GetStockService();
+    
+    foreach (var item in clientOrder.OrderItems) {
+      string currentSku = item.Key;
+      int requestedQuantity = item.Value;
+      
+      stockService.DeductStock(currentSku, requestedQuantity, $"Заказ {clientOrder.OrderNumber}");
+      warehouse.CheckThresholdAndNotify(currentSku);
     }
   }
 
-  public static void DisplayOrderDetails(Order clientOrder)
-  {
-    Console.WriteLine($"\n=== {clientOrder} ===");
-
-    if (clientOrder.OrderItems.Count == ZERO_QUANTITY)
-    {
-      Console.WriteLine("  Заказ пуст");
-      Console.WriteLine();
+  // ========== ОТОБРАЖЕНИЕ ДЕТАЛЕЙ ЗАКАЗА ==========
+  public static void DisplayOrderDetails(Order clientOrder) {
+    if (clientOrder == null) {
+      Console.WriteLine("\n=== Заказ не существует ===\n");
       return;
     }
 
-    List<string> productSkuList = new List<string>(clientOrder.OrderItems.Keys);
-
-    for (int itemIndex = 0; itemIndex < productSkuList.Count; itemIndex++)
-    {
-      string currentSku = productSkuList[itemIndex];
-      int itemQuantity = clientOrder.OrderItems[currentSku];
-
-      Console.WriteLine($"  Товар: {currentSku}, количество: {itemQuantity} шт.");
+    string output = $"\n=== {clientOrder} ===\n";
+    
+    if (clientOrder.OrderItems.Count == 0) {
+      output += "  Заказ пуст\n";
+    } else {
+      foreach (var item in clientOrder.OrderItems) {
+        output += $"  Товар: {item.Key}, количество: {item.Value} шт.\n";
+      }
     }
+    
+    Console.WriteLine(output);
+  }
 
-    Console.WriteLine();
+  // ========== ПОКАЗ ИСТОРИИ ЗАКАЗОВ ==========
+  public static void ShowOrderHistory() {
+    string output = "\n=== ИСТОРИЯ ЗАКАЗОВ ===\n";
+    
+    if (_orderHistory.Count == 0) {
+      output += "История заказов пуста\n";
+    } else {
+      for (int i = 0; i < _orderHistory.Count; i++) {
+        Order order = _orderHistory[i];
+        output += $"{i + 1}. {order}\n";
+        foreach (var item in order.OrderItems) {
+          output += $"     Товар: {item.Key}, количество: {item.Value} шт.\n";
+        }
+      }
+    }
+    
+    Console.WriteLine(output);
   }
 }

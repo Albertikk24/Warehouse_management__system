@@ -1,7 +1,7 @@
 ﻿namespace WarehouseSystem.Models;
 
-public class Product
-{
+public class Product {
+  // ========== СВОЙСТВА ==========
   public string ProductName { get; set; }
   public string ProductSku { get; set; }
   public int CurrentQuantity { get; set; }
@@ -10,33 +10,29 @@ public class Product
   private const int PERCENT_FOR_URGENT_WARNING = 50;
   private const int PERCENT_FOR_NORMAL_WARNING = 30;
 
-  public Product(string productName, string productSku, int initialQuantity, int thresholdValue)
-  {
-    ProductName = productName;
-    ProductSku = productSku;
+  // ========== КОНСТРУКТОР ==========
+  public Product(string productName, string productSku, int initialQuantity, int thresholdValue) {
+    ProductName = productName ?? throw new ArgumentNullException(nameof(productName));
+    ProductSku = productSku ?? throw new ArgumentNullException(nameof(productSku));
     CurrentQuantity = initialQuantity;
     MinimumThreshold = thresholdValue;
   }
 
-  // Проверка: остаток ниже порога
-  public bool IsBelowThreshold()
-  {
+  // ========== ПРОВЕРКА ДОСТИЖЕНИЯ ПОРОГА ==========
+  public bool IsBelowThreshold() {
     return CurrentQuantity <= MinimumThreshold;
   }
 
-  // Расчет процента критичности
-  public int CalculateCriticalityPercent()
-  {
-    if (MinimumThreshold <= 0)
-    {
+  // ========== РАСЧЕТ ПРОЦЕНТА КРИТИЧНОСТИ ==========
+  public int CalculateCriticalityPercent() {
+    if (MinimumThreshold <= 0) {
       return 0;
     }
-
     return (CurrentQuantity * 100) / MinimumThreshold;
   }
 
-  public override string ToString()
-  {
+  // ========== ПЕРЕОПРЕДЕЛЕНИЕ TO STRING ==========
+  public override string ToString() {
     return $"{ProductName} ({ProductSku}) - {CurrentQuantity} шт. (порог: {MinimumThreshold})";
   }
 }
