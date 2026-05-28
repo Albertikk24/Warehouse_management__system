@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "Warehouse management system/1.0.0": {
+        "runtime": {
+          "Warehouse management system.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "Warehouse management system/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}
